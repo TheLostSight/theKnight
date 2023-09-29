@@ -1,0 +1,86 @@
+#include <math.h>
+
+-153.0
+
+#define MOTOR_PIN_1A 2
+#define MOTOR_PIN_1B 3
+#define MOTOR_PIN_2A 4
+#define MOTOR_PIN_2B 5
+#define MOTOR_PIN_3A 6
+#define MOTOR_PIN_3B 7
+#define MOTOR_PIN_PWM 1
+#define Pi 3.14159
+
+float velocity;
+double angle;
+int coordinates[2];
+const float static_speed = 5.0; // Константа: движение с этой скоростью в заданном направлении
+int MOTOR_PIN_ARRAY[6] = {2,3,4,5,6,7}; // пины трех моторов
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(MOTOR_PIN_1A, OUTPUT);
+  pinMode(MOTOR_PIN_1B, OUTPUT);
+  pinMode(MOTOR_PIN_2A, OUTPUT);
+  pinMode(MOTOR_PIN_2B, OUTPUT);
+  pinMode(MOTOR_PIN_3A, OUTPUT);
+  pinMode(MOTOR_PIN_3B, OUTPUT);
+  pinMode(MOTOR_PIN_PWM, OUTPUT);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  int v[3]; // скорости моторов
+  byte error_code = 0;
+  for(int i=1; i<4; i++) {
+    getSpeed(angle, i);
+    v[i-1] = velocity;
+  }
+  motorControl(v);
+}
+
+void getSpeed(double angle, int motor_num) {
+  switch(motor_num) {
+    case 1:
+        velocity = static_speed * cos(Pi/2 - angle);
+        break;
+    case 2:
+        velocity = static_speed * cos(angle - Pi/6);
+        break;
+    case 3:
+        velocity = static_speed * cos(angle + Pi/6);
+        break;
+  }
+}
+
+void motorControl(int velocities[]) {
+  
+//////// Необходимо проверить преобразование скорости из float в int [-255; 255] для работы с analogWrite();
+  
+  int j=0; // счётчик
+  for(int i=0; i<3; i++) {
+    velocities[i] = map(velocities[i], -static_speed, static_speed, -255.0, 255.0); // Преобразование скорости в интервал [-255;255] во float, послед. использование в int;
+    if(velocities[i] > 0){
+      analogWrite(MOTOR_PIN_PWM, (int)velocities[i]); // MOTOR_PIN_PWM - нужно больше экземпляров для 3 моторов
+      digitalWrite(MOTOR_PIN_ARRAY[i+j], 1);
+      digitalWrite(MOTOR_PIN_ARRAY[i+1+j], 0);
+      j++;
+    }
+    else if(velocities[i] < 0) {
+      analogWrite(MOTOR_PIN_PWM, -velocities[i]); // MOTOR_PIN_PWM - нужно больше экземпляров для 3 моторов
+      digitalWrite(MOTOR_PIN_ARRAY[i+j], 0);
+      digitalWrite(MOTOR_PIN_ARRAY[i+1+j], 1);
+      j++;
+    }
+    else {
+      analogWrite(MOTOR_PIN_PWM, 0);
+      digitalWrite(MOTOR_PIN_ARRAY[i+j], 1);
+      digitalWrite(MOTOR_PIN_ARRAY[i+1+j], 1);
+    }
+  }
+}
+
+long map(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
